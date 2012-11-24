@@ -2,11 +2,10 @@ from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import login_required
 from django.core import serializers
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.core.urlresolvers import reverse
 from django.utils import simplejson as json
-from django.http import (HttpResponseForbidden, HttpResponseRedirect,
-    HttpResponse)
+from django.http import (HttpResponseRedirect, HttpResponse)
 from django.utils.decorators import method_decorator
 from django.utils.http import urlquote
 from django.views.generic import CreateView
@@ -90,7 +89,7 @@ class PermissionRequiredMixin(object):
 
         if not has_permission:  # If the user lacks the permission
             if self.raise_exception:  # *and* if an exception was desired
-                return HttpResponseForbidden()  # return a forbidden response.
+                raise PermissionDenied() # raise an exception and use django's 403 page handler
             else:
                 # otherwise, redirect the user to the login page.
                 # Also, handily, sets the `next` GET argument
@@ -159,7 +158,7 @@ class MultiplePermissionsRequiredMixin(object):
         if perms_all:
             if not request.user.has_perms(perms_all):
                 if self.raise_exception:
-                    return HttpResponseForbidden()
+                    raise PermissionDenied() # raise an exception and use django's 403 page handler
                 path = urlquote(request.get_full_path())
                 tup = self.login_url, self.redirect_field_name, path
                 return HttpResponseRedirect("%s?%s=%s" % tup)
@@ -174,7 +173,7 @@ class MultiplePermissionsRequiredMixin(object):
 
             if not has_one_perm:
                 if self.raise_exception:
-                    return HttpResponseForbidden()
+                    raise PermissionDenied() # raise an exception and use django's 403 page handler
                 path = urlquote(request.get_full_path())
                 tup = self.login_url, self.redirect_field_name, path
                 return HttpResponseRedirect("%s?%s=%s" % tup)
@@ -252,7 +251,7 @@ class SuperuserRequiredMixin(object):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_superuser:  # If the user is a standard user,
             if self.raise_exception:  # *and* if an exception was desired
-                return HttpResponseForbidden()  # return a forbidden response.
+                raise PermissionDenied() # raise an exception and use django's 403 page handler
             else:
                 # otherwise, redirect the user to the login page.
                 # Also, handily, sets the `next` GET argument for
@@ -329,7 +328,7 @@ class StaffuserRequiredMixin(object):
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_staff:  # If the request's user is not staff,
             if self.raise_exception:  # *and* if an exception was desired
-                return HttpResponseForbidden()  # return a forbidden response
+                raise PermissionDenied() # raise an exception and use django's 403 page handler
             else:
                 # otherwise, redirect the user to the login page.
                 # Also, handily, sets the GET `next` argument for
